@@ -21,7 +21,7 @@ def fetch_results(search_term, number_results, language_code):
     escaped_search_term = search_term.replace(' ', '+') #replace spaces in the search term with '+' so every search term is included in the results 
 
     google_url = 'https://www.google.com/search?q={}&num={}&hl={}'.format(escaped_search_term, number_results, language_code) #inputting our keywords in google url
-    response = requests.get(google_url, headers=USER_AGENT) #fetches html of google search page
+    response = requests.get(google_url, headers=USER_AGENT) 
     response.raise_for_status() #returns http error if one arised
 
     return search_term, response.text #returns the search term and the html code of the google search page
@@ -37,15 +37,17 @@ def parse_results(html, keyword):
 
         link = result.find('a', href=True) #saving the link from html file
         title = result.find('h3') #saving title from result
-        #html_save = requests.get(str(link)) #commented out code in progress
+        
         description = result.find('span', attrs={'class': 'st'}) #saving description from result
         if link and title: #only saving if both link and title successfully found
             link = link['href']
+            link_request = requests.get(link) #commented out code in progress
+            link_html = link_request.text
             title = title.get_text()
             if description:
                 description = description.get_text()
             if link != '#':
-                found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed})
+                found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed, 'html':link_html})
                 rank += 1
     return found_results
 
