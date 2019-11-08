@@ -41,8 +41,10 @@ def parse_results(html, keyword):
         description = result.find('span', attrs={'class': 'st'}) #saving description from result
         if link and title: #only saving if both link and title successfully found
             link = link['href']
-            link_request = requests.get(link) #commented out code in progress
-            link_html = link_request.text
+
+            #link_request = requests.get(link) #commented out code for testing
+            #link_html = link_request.text
+            link_html = 'test'
             title = title.get_text()
             if description:
                 description = description.get_text()
@@ -66,18 +68,39 @@ def scrape_google(search_term, number_results, language_code):
 
 #This is the main function that calls the functions defined above. Upgrades are needed here for usability
 if __name__ == '__main__':
-    keywords = ['boeing note to financial statements'] #future upgrade will prompt the user asking what keywords should be searched for
-    data = []
-    for keyword in keywords: #looping for each keyword we're searching
-        try:
-            results = scrape_google(keyword, 10, "en")
-            for result in results:
-                data.append(result)
+    #collecting user input
+    user_input_keyword = input('Please enter the keyword(s) you would like to scrape google for ')
+    keywords = [user_input_keyword]
+    user_input_numresults = input('Please enter the number of google results you want to scrape ')
+    #user_input_lang = input('Please enter the language you would like google search for \("en" for English results\) ')
+    
+    #keywords = ['boeing note to financial statements'] #future upgrade will prompt the user asking what keywords should be searched for
+    scraping_data = []
+    data = pd.read_csv('scraped_data.csv')
+    i = 0
+    #Checking if keywords were already scraped
+    #Only scrape if haven't scraped already
+    for keyword_data in data['keyword']:
+        try: 
+            if keyword_data == keywords[0]:
+                i = i+1
         except Exception as e:
-            print(e) #catch and print out any error that pops up
-        finally:
-            time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
-    print(data)
-    df = pd.DataFrame(data) #putting the data scrapped into a dataframe allowing us to save it to csv
-    print(df)
-    df.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+            print(e)
+    if i > 0:
+        print('Already scraped for "' + keywords[0] + '" ' + str(i) + ' times.')
+    else:
+        print('Haven\'t scraped for ' + keywords[i] + ' yet. Scraping now') 
+        for keyword in keywords: #looping for each keyword we're searching
+            try:
+                results = scrape_google(keyword, int(user_input_numresults), "en")
+                for result in results:
+                    scraping_data.append(result)
+            except Exception as e:
+                print(e) #catch and print out any error that pops up
+            finally:
+                time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
+        #print(data)
+        df = pd.DataFrame(scraping_data) #putting the data scrapped into a dataframe allowing us to save it to csv
+        print(df)
+        #df.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+
