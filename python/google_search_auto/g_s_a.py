@@ -1,7 +1,5 @@
 # tested with ipython on macOS 10.14
 
-
-
 #importing necessary libraries
 import requests
 from bs4 import BeautifulSoup
@@ -25,6 +23,7 @@ def fetch_results(search_term, number_results, language_code):
     response.raise_for_status() #returns http error if one arised
 
     return search_term, response.text #returns the search term and the html code of the google search page
+        
 
 #this function goes through the google page html and extracts the links from the results, their rank, title, description, and the timestamp of access
 def parse_results(html, keyword):
@@ -32,25 +31,36 @@ def parse_results(html, keyword):
     date_accessed = date.today() #setting today's date that will be used to save the date the data was scraped
     found_results = [] #initializing [list to store results]
     rank = 1 #initializing rank variable used to keep track of which result we're scraping
-    result_block = soup.find_all('div', attrs={'class': 'g'}) #finding all div tags 
+    result_block = soup.find_all('div', attrs={'class': 'g'}) #finding all div tags
+    
     for result in result_block: #looping through all results
-
         link = result.find('a', href=True) #saving the link from html file
         title = result.find('h3') #saving title from result
-        
         description = result.find('span', attrs={'class': 'st'}) #saving description from result
+        
         if link and title: #only saving if both link and title successfully found
             link = link['href']
-
-            #link_request = requests.get(link) #commented out code for testing
-            #link_html = link_request.text
-            link_html = 'test'
             title = title.get_text()
+            
             if description:
                 description = description.get_text()
-            if link != '#':
-                found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed, 'html':link_html})
-                rank += 1
+                
+            if link != '#': #link is not a anchor
+                
+                if link.endswith('.pdf'): #if the link is a pdf, save the link but don't parse the pdf (will have to develop code to support pdf scraping in the future)
+                    link_html = 'File is a pdf, code currently does not support PDF scraping'
+                    found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed, 'html':link_html})
+                    rank += 1
+                
+                else :
+                    link_request = requests.get(link)
+                    link_soup = BeautifulSoup(link_request.text, 'html.parser') 
+                    #link_html = link_request.text
+                    p_tags = link_soup.findAll('p') #returns a list of all <p> elements in the html code
+                    #found_results.append(p_tags)
+                    found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed, 'html':p_tags})
+                    rank += 1
+                    
     return found_results
 
 #calls fetch_results function and returns an error message if there's one of three common errors
@@ -72,24 +82,25 @@ if __name__ == '__main__':
     user_input_keyword = input('Please enter the keyword(s) you would like to scrape google for ')
     keywords = [user_input_keyword]
     user_input_numresults = input('Please enter the number of google results you want to scrape ')
-    #user_input_lang = input('Please enter the language you would like google search for \("en" for English results\) ')
+    #user_input_lang = input('Please enter the language you would like google search for \("en" for English results\) ') commented out as we are only interested in English results
     
     #keywords = ['boeing note to financial statements'] #future upgrade will prompt the user asking what keywords should be searched for
     scraping_data = []
     data = pd.read_csv('scraped_data.csv')
-    i = 0
+    counter_scrapes = 0
     #Checking if keywords were already scraped
     #Only scrape if haven't scraped already
     for keyword_data in data['keyword']:
         try: 
             if keyword_data == keywords[0]:
-                i = i+1
+                counter_scrapes += 1
         except Exception as e:
             print(e)
-    if i > 0:
+            
+    if counter_scrapes > 0:
         print('Already scraped for "' + keywords[0] + '" ' + str(i) + ' times.')
     else:
-        print('Haven\'t scraped for ' + keywords[i] + ' yet. Scraping now') 
+        print('Haven\'t scraped for ' + keywords[counter_scrapes] + ' yet. Scraping now') 
         for keyword in keywords: #looping for each keyword we're searching
             try:
                 results = scrape_google(keyword, int(user_input_numresults), "en")
@@ -100,7 +111,11 @@ if __name__ == '__main__':
             finally:
                 time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
         #print(data)
-        df = pd.DataFrame(scraping_data) #putting the data scrapped into a dataframe allowing us to save it to csv
-        print(df)
-        #df.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+                
+        df_scraping_data = pd.DataFrame(scraping_data) #putting the data scrapped into a dataframe allowing us to save it to csv
+        print(df_scraping_data)
+        merged_data = data.append(df_scraping_data, sort=False)
+        print(merged_data)
+        merged_data.to_csv('merged_data.csv') #saving merged dataframe to a separate csv
+        #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
 
