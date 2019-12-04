@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import time
 import pandas as pd
 from datetime import date
-#import user_agents commented out until library is used
+
 
 #setting the user agent to mask our requests from python and make sure google does not block the requests made
 USER_AGENT = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'}
@@ -18,7 +18,9 @@ def fetch_results(search_term, number_results, language_code):
     assert isinstance(number_results, int), 'Number of results must be an integer' #checking if the number of results is an integer to prevent the code crashing
     escaped_search_term = search_term.replace(' ', '+') #replace spaces in the search term with '+' so every search term is included in the results 
 
+    
     google_url = 'https://www.google.com/search?q={}&num={}&hl={}'.format(escaped_search_term, number_results, language_code) #inputting our keywords in google url
+    url_get = driver.get(google_url)
     response = requests.get(google_url, headers=USER_AGENT) 
     response.raise_for_status() #returns http error if one arised
 
@@ -55,9 +57,9 @@ def parse_results(html, keyword):
                 else :
                     link_request = requests.get(link)
                     link_soup = BeautifulSoup(link_request.text, 'html.parser') 
-                    #link_html = link_request.text
+                    link_html = link_request.text
                     p_tags = link_soup.findAll('p') #returns a list of all <p> elements in the html code
-                    #found_results.append(p_tags)
+                    found_results.append(p_tags)
                     found_results.append({'keyword': keyword, 'rank': rank, 'title': title, 'description': description, 'link':link, 'date accessed':date_accessed, 'html':p_tags})
                     rank += 1
                     
@@ -76,15 +78,15 @@ def scrape_google(search_term, number_results, language_code):
     except requests.RequestException:
         raise Exception("Appears to be an issue with your connection")
 
-#This is the main function that calls the functions defined above. Upgrades are needed here for usability
-if __name__ == '__main__':
+#main function calling all the other functions
+def main():
     #collecting user input
     user_input_keyword = input('Please enter the keyword(s) you would like to scrape google for ')
     keywords = [user_input_keyword]
     user_input_numresults = input('Please enter the number of google results you want to scrape ')
     #user_input_lang = input('Please enter the language you would like google search for \("en" for English results\) ') commented out as we are only interested in English results
     
-    #keywords = ['boeing note to financial statements'] #future upgrade will prompt the user asking what keywords should be searched for
+    #keywords = ['boeing note to financial statements'] #script now prompts the user asking what keywords should be searched for
     scraping_data = []
     data = pd.read_csv('scraped_data.csv')
     counter_scrapes = 0
@@ -107,7 +109,7 @@ if __name__ == '__main__':
                 for result in results:
                     scraping_data.append(result)
             except Exception as e:
-                print(e) #catch and print out any error that pops up
+                print(e)
             finally:
                 time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
         #print(data)
@@ -117,5 +119,9 @@ if __name__ == '__main__':
         merged_data = data.append(df_scraping_data, sort=False)
         print(merged_data)
         merged_data.to_csv('merged_data.csv') #saving merged dataframe to a separate csv
-        #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+        #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a shared database
 
+
+#This is the main function that calls the main function
+if __name__ == '__main__':
+    main()
