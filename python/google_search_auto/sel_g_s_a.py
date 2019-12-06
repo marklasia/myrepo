@@ -22,6 +22,7 @@ driver = webdriver.Chrome(chrome_driver)
 def fetch_results(search_term, number_results, language_code, number_pages):
     assert isinstance(search_term, str), 'Search term must be a string' #checking if the search term is a string
     assert isinstance(number_results, int), 'Number of results must be an integer' #checking if the number of results is an integer to prevent the code crashing
+    assert isinstance(number_pages, int), 'Number of results must be an integer' #checking if the number of results is an integer to prevent the code crashing
     escaped_search_term = search_term.replace(' ', '+') #replace spaces in the search term with '+' so every search term is included in the results 
 
     
@@ -35,8 +36,13 @@ def fetch_results(search_term, number_results, language_code, number_pages):
     result_block = driver.find_elements_by_xpath('//a') #finding all links
 
     for result in result_block:
-        found_results.append(result.get_attribute("href")) #appending links to list
-
+        if not 'google' in str(result.get_attribute("href")) and result.get_attribute("href") is not None: #skip any google or null links
+            link = result.get_attribute("href")
+            if link.endswith('.pdf'): #if the link is a pdf, save the link but don't parse the pdf (will have to develop code to support pdf scraping in the future)
+                    link_html = 'File is a pdf, code currently does not support PDF scraping'
+            
+            found_results.append({'keyword': search_term, 'link':link, 'date accessed':date_accessed, 'html':link_html}) #NEED TO GET BEAUTIFUL SOUP TO SAVE THE LINK HTML HERE
+     
     time.sleep(10) #sleep between requests so they seem human
     next_button = driver.find_element_by_id('pnnext')                 
     next_button.click() #going to the next page to start scraping
@@ -44,19 +50,21 @@ def fetch_results(search_term, number_results, language_code, number_pages):
     #contact_df = pd.DataFrame(list(set(contact_list)))
     
     if number_pages > 1:
-        #Switching to next page on Google
+        #Switching to next page on Google. NEED TO ADAPT CODE WITH NEW APPROACH ABOVE
         for num_page in range(number_pages):
             try: 
-                result_block = driver.find_elements_by_css_selector('div.g')
+                result_block = driver.find_elements_by_xpath('//a')
                 for result in result_block:
-                    found_results.append(result.get_attribute("href"))
+                    if not 'google' in str(result.get_attribute("href")) and result.get_attribute("href") is not None:
+                        found_results.append(result.get_attribute("href"))
 
                 next_button = driver.find_element_by_id('pnnext')                 
                 next_button.click()
             except Exception as e:
                 print(e)
             finally:
-                time.sleep(5)     
+                time.sleep(5)
+    
             
     return found_results
     """
@@ -89,7 +97,7 @@ def fetch_results(search_term, number_results, language_code, number_pages):
                     rank += 1
                     
     return found_results   
-
+    """
 
 #calls fetch_results function and returns an error message if there's one of three common errors
 def scrape_google(search_term, number_results, language_code):
@@ -148,7 +156,7 @@ def main():
         #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
 
 
-#This is the main function that calls the main function
+#Start running the code if the file is initialised
 if __name__ == '__main__':
     main()
-"""
+
