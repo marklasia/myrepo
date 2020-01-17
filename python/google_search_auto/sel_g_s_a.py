@@ -113,16 +113,20 @@ def scrape_google(search_term, number_results, language_code):
 
 #main function calling all the other functions
 def main():
+    """
     #collecting user input
     user_input_keyword = input('Please enter the keyword(s) you would like to scrape google for ')
     keywords = [user_input_keyword]
     user_input_numresults = input('Please enter the number of google results you want to scrape ')
     user_input_numresults = int(user_input_numresults) #setting the input to an integer
     #user_input_lang = input('Please enter the language you would like google search for \("en" for English results\) ') commented out as we are only interested in English results
+"""
     
     #keywords = ['boeing note to financial statements'] #future upgrade will prompt the user asking what keywords should be searched for
     scraping_data = []
-    data = pd.read_csv('scraped_data.csv')
+    data = pd.read_csv('csr_report.csv')
+
+    """
     counter_scrapes = 0
     #Checking if keywords were already scraped
     #Only scrape if haven't scraped already
@@ -136,25 +140,28 @@ def main():
     if counter_scrapes > 0:
         print('Already scraped for "' + keywords[0] + '" ' + str(i) + ' times.')
     else:
-        print('Haven\'t scraped for ' + keywords[counter_scrapes] + ' yet. Scraping now') 
-        for keyword in keywords: #looping for each keyword we're searching
-            try:
-                results = scrape_google(keyword, user_input_numresults, "en")
-                for result in results:
-                    scraping_data.append(result)
-            except Exception as e:
-                print(e) #catch and print out any error that pops up
-            finally:
-                time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
-        #print(data)
-                
-        df_scraping_data = pd.DataFrame(scraping_data) #putting the data scrapped into a dataframe allowing us to save it to csv
-        print(df_scraping_data)
-        merged_data = data.append(df_scraping_data, sort=False)
-        print(merged_data)
-        merged_data.to_csv('merged_data.csv') #saving merged dataframe to a separate csv
-        #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+    """
 
+    for quote in data['Quote']: #looping for each quote we're searching for
+        try:
+            results = scrape_google(keyword, user_input_numresults, "en")
+            for result in results:
+                scraping_data.append(result)
+        except Exception as e:
+            print(e) #catch and print out any error that pops up
+        finally:
+            time.sleep(20) #pausing(sleeping) between requests to make sure google doesn't block access
+    #print(data)
+                
+    df_scraping_data = pd.DataFrame(scraping_data) #putting the data scrapped into a dataframe allowing us to save it to csv
+    #print(df_scraping_data)
+    df_scraping_data.to_csv('scraping_results.csv')
+    """
+    merged_data = data.append(df_scraping_data, sort=False)
+    print(merged_data)
+    merged_data.to_csv('merged_data.csv') #saving merged dataframe to a separate csv
+    #df_scraping_data.to_csv('scraped_data.csv') #saving data to csv. Future uprade will include several ways of saving the data, including to a database
+"""
 
 #Start running the code if the file is initialised
 if __name__ == '__main__':
